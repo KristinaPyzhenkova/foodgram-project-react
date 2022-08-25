@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 
 from .views import (
     TagViewSet, RecipeViewSet, IngredientViewSet,
-    UsersViewSet, user_get_token, user_del_token
+    UserViewSet, user_get_token, user_del_token
 )
 
 
@@ -13,7 +13,7 @@ router = SimpleRouter()
 router.register('tags', TagViewSet, basename='tags')
 router.register('recipes', RecipeViewSet, basename='recipes')
 router.register('ingredients', IngredientViewSet, basename='ingredients')
-router.register('users', UsersViewSet, basename='user')
+router.register('users', UserViewSet, basename='user')
 
 urlpatterns = [
     path('', include(router.urls)),

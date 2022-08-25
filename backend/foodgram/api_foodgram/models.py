@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from .validators import validate_username, min_value_validator
 
 
-class Users(AbstractUser):
+class User(AbstractUser):
     username_validator = UnicodeUsernameValidator()
 
     email = models.EmailField(
@@ -53,13 +53,13 @@ class Users(AbstractUser):
 
 class Subscriber(models.Model):
     user = models.ForeignKey(
-        Users,
+        User,
         related_name='user_subscribed',
         on_delete=models.CASCADE,
         verbose_name='Подписчик'
     )
     subscribed = models.ForeignKey(
-        Users,
+        User,
         related_name='subscribed',
         on_delete=models.CASCADE,
         verbose_name='Подписывающийся'
@@ -147,10 +147,9 @@ class Recipe(models.Model):
         verbose_name='Тег'
     )
     author = models.ForeignKey(
-        Users,
+        User,
         related_name='recipes',
         on_delete=models.CASCADE,
-        null=True,
         verbose_name='Автор'
     )
     ingredients = models.ManyToManyField(
@@ -175,7 +174,7 @@ class Recipe(models.Model):
         validators=[min_value_validator]
     )
     favorite = models.ManyToManyField(
-        Users,
+        User,
         through='Favorites'
     )
 
@@ -194,8 +193,8 @@ class RecipeTag(models.Model):
 
     class Meta:
         ordering = ['-id']
-        verbose_name = 'РецептТег'
-        verbose_name_plural = 'РецептыТеги'
+        verbose_name = 'Теги рецепта'
+        verbose_name_plural = 'Теги рецептов'
         constraints = [
             models.UniqueConstraint(
                 fields=['recipes', 'tags'],
@@ -213,14 +212,14 @@ class Favorites(models.Model):
         related_name='favoritess'
     )
     user = models.ForeignKey(
-        Users, on_delete=models.CASCADE,
+        User, on_delete=models.CASCADE,
         related_name='favoritess'
     )
 
     class Meta:
         ordering = ['-id']
-        verbose_name = 'Избранный'
-        verbose_name_plural = 'Избранные'
+        verbose_name = 'Избранный рецепт'
+        verbose_name_plural = 'Избранные рецепты'
         constraints = [
             models.UniqueConstraint(
                 fields=['recipes', 'user'],
@@ -248,8 +247,8 @@ class Amount(models.Model):
 
     class Meta:
         ordering = ['-id']
-        verbose_name = 'Количество'
-        verbose_name_plural = 'Количество'
+        verbose_name = 'Количество ингредиента'
+        verbose_name_plural = 'Количество ингредиентов'
 
     def __str__(self):
         return f'{self.amount}'
@@ -257,7 +256,7 @@ class Amount(models.Model):
 
 class ShoppingCart(models.Model):
     user = models.ForeignKey(
-        Users,
+        User,
         related_name='shopping',
         on_delete=models.CASCADE,
         verbose_name='Покупатель'
@@ -266,7 +265,6 @@ class ShoppingCart(models.Model):
         Recipe,
         related_name='shopping',
         on_delete=models.CASCADE,
-        null=True,
         verbose_name='Рецепт для покупок'
     )
 

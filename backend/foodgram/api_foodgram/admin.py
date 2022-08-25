@@ -1,12 +1,12 @@
 from django.contrib import admin
 
 from .models import (
-    Users, Subscriber, Tag, Ingredient, Recipe,
+    User, Subscriber, Tag, Ingredient, Recipe,
     Amount, ShoppingCart, RecipeTag, Favorites
 )
 
 
-@admin.register(Users)
+@admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = ('id',
                     'email',
@@ -44,13 +44,19 @@ class IngredientAdmin(admin.ModelAdmin):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
+    readonly_fields = ('counter',)
     list_display = ('id',
                     'author',
                     'name',
                     'image',
                     'text',
-                    'cooking_time')
+                    'cooking_time',
+                    'counter')
     search_fields = ('author', 'name')
+
+    def counter(self, obj):
+        return obj.favoritess.count()
+    counter.short_description = 'Счетчик добавления в избранное'
 
 
 @admin.register(Amount)

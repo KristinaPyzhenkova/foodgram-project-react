@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -13,7 +14,7 @@ from django.conf import settings
 
 from .mixins import ListRetrieveViewSet
 from .models import (
-    Users, Subscriber, Tag, Ingredient,
+    User, Subscriber, Tag, Ingredient,
     Recipe, Amount, ShoppingCart, Favorites
 )
 from .filters import RecipeFilter
@@ -23,10 +24,11 @@ from .serializers import (
     IngredientSerializerGet, UserSerializer,
     LiteRecipeSerializer, SubscriptionUserSerializer,
     PasswordSerializer, NewUserSerializer,
-    FavoriteSerializer
+    FavoriteSerializer, ShoppingCartSerializer,
+    SubscriberSerializer
 )
 from .pagination import UserPagination
-from .utils import ShoppingList
+from .utils import shopping
 
 
 @permission_classes([permissions.AllowAny, ])
@@ -93,15 +95,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe_in_shop = ShoppingCart.objects.filter(
             user=current_user, recipe=recipe
         )
+        data = {'user': current_user.id, 'recipe': recipe.id}
+        serializer = ShoppingCartSerializer(
+            data=data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
         if request.method == 'DELETE':
-            if not recipe_in_shop.exists():
-                return Response(status=status.HTTP_400_BAD_REQUEST)
             recipe_in_shop.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        if recipe_in_shop.exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
         ShoppingCart.objects.create(user=current_user, recipe=recipe)
-        serializer = LiteRecipeSerializer(recipe)
+        serializer = LiteRecipeSerializer(recipe, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(
@@ -116,7 +120,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'ingredients__name',
             'ingredients__measurement_unit'
         ).annotate(Sum('amount'))
-        main_list = ShoppingList(ingredients)
+        main_list = shopping(ingredients)
         response = HttpResponse(main_list, 'Content-Type: text/plain')
         response['Content-Disposition'] = 'attachment; filename="Cart.txt"'
         return response
@@ -135,15 +139,15 @@ class IngredientViewSet(ListRetrieveViewSet):
 
 
 @permission_classes([permissions.AllowAny, ])
-class UsersViewSet(viewsets.ModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
     """
-    ViewSet предназначен для взаимодействия в моделью Users.
+    ViewSet предназначен для взаимодействия в моделью User.
     Он позволяет получать данные о пользователях, о текущем пользователе(me),
     создавать пользователей и менять пароль, получать данные о подписках,
     подписываться и удалять подписки.
     """
     serializer_class = UserSerializer
-    queryset = Users.objects.all()
+    queryset = User.objects.all()
     pagination_class = UserPagination
 
     def get_serializer_class(self):
@@ -198,8 +202,6 @@ class UsersViewSet(viewsets.ModelViewSet):
             }
             return Response(response)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     @action(
         detail=False,
         methods=['GET'],
@@ -207,7 +209,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated]
     )
     def subscriptions(self, request):
-        subscriptions = Users.objects.filter(subscribed__user=request.user)
+        subscriptions = User.objects.filter(subscribed__user=request.user)
         serializer = SubscriptionUserSerializer(
             subscriptions,
             context=self.get_serializer_context(),
@@ -222,22 +224,25 @@ class UsersViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated]
     )
     def subscriptions_create_delete(self, request, pk):
-        subscribed = get_object_or_404(Users, pk=pk)
+        subscribed = get_object_or_404(User, pk=pk)
         current_user = self.request.user
         subscribed_in = Subscriber.objects.filter(
             user=current_user, subscribed=subscribed
         )
+        data = {'user': current_user.id, 'subscribed': subscribed.id}
+        serializer = SubscriberSerializer(
+            data=data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
         if request.method == 'DELETE':
-            if not subscribed_in.exists():
-                return Response(status=status.HTTP_400_BAD_REQUEST)
             subscribed_in.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        elif request.method == 'POST':
-            if subscribed_in.exists():
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-            Subscriber.objects.create(user=current_user, subscribed=subscribed)
-            serializer = SubscriptionUserSerializer(subscribed)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        Subscriber.objects.create(user=current_user, subscribed=subscribed)
+        serializer = SubscriptionUserSerializer(
+            subscribed, context={'request': request}
+        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(['POST', ])
@@ -257,7 +262,7 @@ def user_get_token(request):
             {'Absent_fields': absent_fields},
             status=status.HTTP_400_BAD_REQUEST
         )
-    user = get_object_or_404(Users, email=request.data['email'])
+    user = get_object_or_404(User, email=request.data['email'])
     if user.check_password(request.data['password']):
         token = AccessToken.for_user(user=user)
         return Response({

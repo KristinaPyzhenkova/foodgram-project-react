@@ -1,4 +1,4 @@
-def ShoppingList(ingredients):
+def shopping(ingredients):
     shopping_list = {}
     for ingredient in ingredients:
         amount = ingredient.get('amount__sum')

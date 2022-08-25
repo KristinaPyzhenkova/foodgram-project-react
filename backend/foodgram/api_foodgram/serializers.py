@@ -2,8 +2,9 @@ from rest_framework import serializers
 from drf_extra_fields.fields import Base64ImageField
 
 from .models import (
-    Users, Subscriber, Tag, Ingredient,
-    Recipe, Amount, RecipeTag, Favorites
+    User, Subscriber, Tag, Ingredient,
+    Recipe, Amount, RecipeTag,
+    Favorites, ShoppingCart
 )
 
 
@@ -13,7 +14,7 @@ class NewUserSerializer(serializers.ModelSerializer):
     """
 
     class Meta:
-        model = Users
+        model = User
         fields = ('email', 'id', 'username', 'first_name', 'last_name')
 
 
@@ -24,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        model = Users
+        model = User
         fields = (
             'email', 'id', 'username', 'first_name',
             'last_name', 'is_subscribed'
@@ -48,7 +49,7 @@ class PasswordSerializer(serializers.ModelSerializer):
     current_password = serializers.CharField(required=True)
 
     class Meta:
-        model = Users
+        model = User
         fields = ('new_password', 'current_password')
 
 
@@ -233,7 +234,6 @@ class FavoriteSerializer(serializers.ModelSerializer):
         model = Favorites
 
     def validate(self, data):
-        print(data)
         user = data['user']
         recipe = data['recipes']
         favorite = Favorites.objects.filter(user=user, recipes=recipe)
@@ -272,6 +272,33 @@ class LiteRecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cooking_time')
 
 
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для списка покупок.
+    """
+
+    class Meta:
+        fields = ('recipe', 'user')
+        model = ShoppingCart
+
+    def validate(self, data):
+        user = data['user']
+        recipe = data['recipe']
+        shopping_list = ShoppingCart.objects.filter(user=user, recipe=recipe)
+        if self.context.get('request').method == 'POST':
+            if shopping_list.exists():
+                raise serializers.ValidationError({
+                    'errors': 'Данный рецепт добавлен уже в список покупок!'
+                })
+            return data
+        if self.context.get('request').method == 'DELETE':
+            if not shopping_list.exists():
+                raise serializers.ValidationError({
+                    'errors': 'Данного рецепта нет в списке покупок!'
+                })
+            return data
+
+
 class SubscriptionUserSerializer(serializers.ModelSerializer):
     """
     Сериализатор для подписок.
@@ -281,7 +308,7 @@ class SubscriptionUserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        model = Users
+        model = User
         fields = (
             'email', 'id', 'username', 'first_name', 'last_name',
             'recipes', 'recipes_count', 'is_subscribed'
@@ -297,3 +324,32 @@ class SubscriptionUserSerializer(serializers.ModelSerializer):
         return Subscriber.objects.filter(
             user=request.user, subscribed=following
         ).exists()
+
+
+class SubscriberSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для подписок.
+    """
+
+    class Meta:
+        fields = ('subscribed', 'user')
+        model = Subscriber
+
+    def validate(self, data):
+        user = data['user']
+        subscribed = data['subscribed']
+        subscribed_user = Subscriber.objects.filter(
+            user=user, subscribed=subscribed
+        )
+        if self.context.get('request').method == 'POST':
+            if subscribed_user.exists():
+                raise serializers.ValidationError({
+                    'errors': 'На данного пользователя уже подписка!'
+                })
+            return data
+        if self.context.get('request').method == 'DELETE':
+            if not subscribed_user.exists():
+                raise serializers.ValidationError({
+                    'errors': 'На данного пользователя нет подписки!'
+                })
+            return data
