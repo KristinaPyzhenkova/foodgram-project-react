@@ -1,10 +1,13 @@
 from django.contrib import admin
 
-from .models import (Users, Subscribed, Tags, Ingredients, Recipes,
-                     Amount, Shopping_cart, RecipesTags, Favorites)
+from .models import (
+    Users, Subscriber, Tag, Ingredient, Recipe,
+    Amount, ShoppingCart, RecipeTag, Favorites
+)
 
 
-class UsersAdmin(admin.ModelAdmin):
+@admin.register(Users)
+class UserAdmin(admin.ModelAdmin):
     list_display = ('id',
                     'email',
                     'username',
@@ -14,7 +17,8 @@ class UsersAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-class SubscribedAdmin(admin.ModelAdmin):
+@admin.register(Subscriber)
+class SubscriberAdmin(admin.ModelAdmin):
     list_display = ('id',
                     'user',
                     'subscribed')
@@ -22,7 +26,8 @@ class SubscribedAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-class TagsAdmin(admin.ModelAdmin):
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
     list_display = ('name',
                     'color',
                     'slug')
@@ -30,13 +35,15 @@ class TagsAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-class IngredientsAdmin(admin.ModelAdmin):
+@admin.register(Ingredient)
+class IngredientAdmin(admin.ModelAdmin):
     list_display = ('name',
                     'measurement_unit')
     search_fields = ('name', 'measurement_unit')
 
 
-class RecipesAdmin(admin.ModelAdmin):
+@admin.register(Recipe)
+class RecipeAdmin(admin.ModelAdmin):
     list_display = ('id',
                     'author',
                     'name',
@@ -46,6 +53,7 @@ class RecipesAdmin(admin.ModelAdmin):
     search_fields = ('author', 'name')
 
 
+@admin.register(Amount)
 class AmountAdmin(admin.ModelAdmin):
     list_display = ('id',
                     'ingredients',
@@ -54,31 +62,23 @@ class AmountAdmin(admin.ModelAdmin):
     search_fields = ('recipes', 'amount')
 
 
-class Shopping_cartAdmin(admin.ModelAdmin):
+@admin.register(ShoppingCart)
+class ShoppingCartAdmin(admin.ModelAdmin):
     list_display = ('user',
                     'recipe')
     search_fields = ('user', 'recipe')
 
 
-class RecipesTagsAdmin(admin.ModelAdmin):
+@admin.register(RecipeTag)
+class RecipeTagAdmin(admin.ModelAdmin):
     list_display = ('recipes',
                     'tags')
     empty_value_display = '-пусто-'
 
 
-class FavoritesAdmin(admin.ModelAdmin):
+@admin.register(Favorites)
+class FavoriteAdmin(admin.ModelAdmin):
     list_display = ('id',
                     'recipes',
                     'user')
     empty_value_display = '-пусто-'
-
-
-admin.site.register(Users, UsersAdmin)
-admin.site.register(Subscribed, SubscribedAdmin)
-admin.site.register(Ingredients, IngredientsAdmin)
-admin.site.register(Tags, TagsAdmin)
-admin.site.register(Recipes, RecipesAdmin)
-admin.site.register(Amount, AmountAdmin)
-admin.site.register(Shopping_cart, Shopping_cartAdmin)
-admin.site.register(RecipesTags, RecipesTagsAdmin)
-admin.site.register(Favorites, FavoritesAdmin)

@@ -1,15 +1,18 @@
 from rest_framework.routers import SimpleRouter
 from django.urls import include, path
-from .views import (TagsViewSet, RecipesViewSet, IngredientsViewSet,
-                    UsersViewSet, user_get_token, user_del_token)
 from django.conf import settings
 from django.conf.urls.static import static
 
+from .views import (
+    TagViewSet, RecipeViewSet, IngredientViewSet,
+    UsersViewSet, user_get_token, user_del_token
+)
+
 
 router = SimpleRouter()
-router.register('tags', TagsViewSet)
-router.register('recipes', RecipesViewSet, basename='recipes')
-router.register('ingredients', IngredientsViewSet)
+router.register('tags', TagViewSet, basename='tags')
+router.register('recipes', RecipeViewSet, basename='recipes')
+router.register('ingredients', IngredientViewSet, basename='ingredients')
 router.register('users', UsersViewSet, basename='user')
 
 urlpatterns = [
