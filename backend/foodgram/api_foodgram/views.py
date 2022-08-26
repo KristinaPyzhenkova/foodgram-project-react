@@ -15,7 +15,7 @@ from django.conf import settings
 from .mixins import ListRetrieveViewSet
 from .models import (
     User, Subscriber, Tag, Ingredient,
-    Recipe, Amount, ShoppingCart, Favorites
+    Recipe, Amount, ShoppingCart, Favorite
 )
 from .filters import RecipeFilter
 from .serializers import (
@@ -28,7 +28,7 @@ from .serializers import (
     SubscriberSerializer
 )
 from .pagination import UserPagination
-from .utils import shopping
+from .utils import get_ingredients_list_for_shopping
 
 
 @permission_classes([permissions.AllowAny, ])
@@ -65,7 +65,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def favorite(self, request, pk):
         current_user = self.request.user
         recipe = get_object_or_404(Recipe, pk=pk)
-        recipe_in_favorite = Favorites.objects.filter(
+        recipe_in_favorite = Favorite.objects.filter(
             user=current_user, recipes=recipe
         )
         data = {'user': current_user.id, 'recipes': recipe.id}
@@ -75,7 +75,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         if request.method == 'POST':
-            Favorites.objects.create(user=current_user, recipes=recipe)
+            Favorite.objects.create(user=current_user, recipes=recipe)
             serializer = FavoriteRecipeSerializer(
                 recipe, context={'request': request}
             )
@@ -120,7 +120,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'ingredients__name',
             'ingredients__measurement_unit'
         ).annotate(Sum('amount'))
-        main_list = shopping(ingredients)
+        main_list = get_ingredients_list_for_shopping(ingredients)
         response = HttpResponse(main_list, 'Content-Type: text/plain')
         response['Content-Disposition'] = 'attachment; filename="Cart.txt"'
         return response

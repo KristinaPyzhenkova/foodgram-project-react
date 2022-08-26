@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from .models import (
     User, Subscriber, Tag, Ingredient, Recipe,
-    Amount, ShoppingCart, RecipeTag, Favorites
+    Amount, ShoppingCart, RecipeTag, Favorite
 )
 
 
@@ -56,6 +56,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     def counter(self, obj):
         return obj.favoritess.count()
+
     counter.short_description = 'Счетчик добавления в избранное'
 
 
@@ -82,7 +83,7 @@ class RecipeTagAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-@admin.register(Favorites)
+@admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
     list_display = ('id',
                     'recipes',

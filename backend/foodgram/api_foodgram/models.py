@@ -175,7 +175,7 @@ class Recipe(models.Model):
     )
     favorite = models.ManyToManyField(
         User,
-        through='Favorites'
+        through='Favorite'
     )
 
     class Meta:
@@ -206,7 +206,7 @@ class RecipeTag(models.Model):
         return f'{self.recipes} {self.tags}'
 
 
-class Favorites(models.Model):
+class Favorite(models.Model):
     recipes = models.ForeignKey(
         Recipe, on_delete=models.CASCADE,
         related_name='favoritess'

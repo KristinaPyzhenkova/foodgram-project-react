@@ -4,7 +4,7 @@ from drf_extra_fields.fields import Base64ImageField
 from .models import (
     User, Subscriber, Tag, Ingredient,
     Recipe, Amount, RecipeTag,
-    Favorites, ShoppingCart
+    Favorite, ShoppingCart
 )
 
 
@@ -110,7 +110,7 @@ class RecipeSerializerGet(serializers.ModelSerializer):
         request = self.context.get('request')
         if request is None or request.user.is_anonymous:
             return False
-        return Favorites.objects.filter(
+        return Favorite.objects.filter(
             user=request.user, recipes=recipes
         ).exists()
 
@@ -118,7 +118,7 @@ class RecipeSerializerGet(serializers.ModelSerializer):
         request = self.context.get('request')
         if request is None or request.user.is_anonymous:
             return False
-        return Favorites.objects.filter(
+        return Favorite.objects.filter(
             user=request.user, recipes=recipes
         ).exists()
 
@@ -148,6 +148,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(), many=True
     )
     image = Base64ImageField(required=False)
+    author = UserSerializer(required=False)
 
     class Meta:
         model = Recipe
@@ -157,6 +158,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
+        print(validated_data)
         validated_data['author'] = self.context['request'].user
         ingredients = validated_data.pop('amount')
         tags = validated_data.pop('tags')
@@ -211,7 +213,7 @@ class FavoriteRecipeSerializer(serializers.ModelSerializer):
     def validate(self, data):
         user = data['user']
         recipe = data['recipe']
-        favorite = Favorites.objects.filter(user=user, recipes=recipe)
+        favorite = Favorite.objects.filter(user=user, recipes=recipe)
         if self.context.get('request').method == 'POST':
             if favorite.exists():
                 raise serializers.ValidationError({
@@ -231,12 +233,12 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = ('recipes', 'user')
-        model = Favorites
+        model = Favorite
 
     def validate(self, data):
         user = data['user']
         recipe = data['recipes']
-        favorite = Favorites.objects.filter(user=user, recipes=recipe)
+        favorite = Favorite.objects.filter(user=user, recipes=recipe)
         if self.context.get('request').method == 'POST':
             if favorite.exists():
                 raise serializers.ValidationError({
