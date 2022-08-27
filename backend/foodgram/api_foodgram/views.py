@@ -11,9 +11,6 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from django_filters.rest_framework import DjangoFilterBackend
 from django.conf import settings
-from rest_framework.authtoken import views as auth_views
-from rest_framework.compat import coreapi, coreschema
-from rest_framework.schemas import ManualSchema
 
 from .mixins import ListRetrieveViewSet
 from .models import (
@@ -28,7 +25,7 @@ from .serializers import (
     LiteRecipeSerializer, SubscriptionUserSerializer,
     PasswordSerializer, NewUserSerializer,
     FavoriteSerializer, ShoppingCartSerializer,
-    SubscriberSerializer, MyAuthTokenSerializer
+    SubscriberSerializer
 )
 from .pagination import UserPagination
 from .utils import get_ingredients_list_for_shopping
@@ -286,36 +283,5 @@ def user_del_token(request):
         'exp': dt.utcfromtimestamp(dt.timestamp())},
         settings.SECRET_KEY, algorithm='HS256')
     return Response({
-        'token': str(token),
+        'auth_token': str(token),
     }, status=status.HTTP_204_NO_CONTENT)
-
-
-class MyAuthToken(auth_views.ObtainAuthToken):
-    serializer_class = MyAuthTokenSerializer
-    if coreapi is not None and coreschema is not None:
-        schema = ManualSchema(
-            fields=[
-                coreapi.Field(
-                    name="email",
-                    required=True,
-                    location='form',
-                    schema=coreschema.String(
-                        title="Email",
-                        description="Valid email for authentication",
-                    ),
-                ),
-                coreapi.Field(
-                    name="password",
-                    required=True,
-                    location='form',
-                    schema=coreschema.String(
-                        title="Password",
-                        description="Valid password for authentication",
-                    ),
-                ),
-            ],
-            encoding="application/json",
-        )
-
-
-obtain_auth_token = MyAuthToken.as_view()
