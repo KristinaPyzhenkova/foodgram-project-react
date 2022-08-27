@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from drf_extra_fields.fields import Base64ImageField
+from django.contrib.auth import authenticate
 
 from .models import (
     User, Subscriber, Tag, Ingredient,
@@ -355,3 +356,26 @@ class SubscriberSerializer(serializers.ModelSerializer):
                     'errors': 'На данного пользователя нет подписки!'
                 })
             return data
+
+
+class MyAuthTokenSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        if email and password:
+            user = authenticate(request=self.context.get('request'),
+                                email=email, password=password)
+
+            if not user:
+                msg = _('Unable to log in with provided credentials.')
+                raise serializers.ValidationError(msg, code='authorization')
+        else:
+            msg = _('Must include "username" and "password".')
+            raise serializers.ValidationError(msg, code='authorization')
+
+        attrs['user'] = user
+        return attrs
