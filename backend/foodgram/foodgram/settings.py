@@ -9,9 +9,9 @@ environ.Env.read_env()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY', default='123456789')
 
-DEBUG = env('DEBUG')
+DEBUG = os.getenv('DEBUG', default='False')
 
 ALLOWED_HOSTS = ['*', '127.0.0.1', 'localhost', ]
 
