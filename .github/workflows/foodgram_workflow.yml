@@ -33,7 +33,7 @@ jobs:
         with:
           context: ./backend/foodgram
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/diploma:v1.4
+          tags: ${{ secrets.DOCKER_USERNAME }}/diploma:v1.5
 
 
   deploy:
@@ -49,7 +49,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
-            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/diploma:v1.4
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/diploma:v1.5
             sudo docker-compose stop
             sudo docker compose down -v
             sudo docker rmi kristinapyzhenkova/diploma
