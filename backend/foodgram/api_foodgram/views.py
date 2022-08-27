@@ -246,6 +246,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['POST', ])
+@permission_classes([permissions.AllowAny, ])
 def user_get_token(request):
     """
     View предназначен для получения пользователем токена. При
