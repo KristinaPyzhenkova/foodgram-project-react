@@ -7,8 +7,8 @@ services:
     env_file:
       - ./.env
 
-  web:
-    image: kristinapyzhenkova/diploma:v1.2
+  backend:
+    image: kristinapyzhenkova/diploma:v1.3
     restart: always
     volumes:
       - static_value:/app/static/
@@ -20,9 +20,7 @@ services:
       - ./.env
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: kristinapyzhenkova/diploma_frontend:v1.1
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
