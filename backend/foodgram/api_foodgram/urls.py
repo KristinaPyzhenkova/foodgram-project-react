@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 
 from .views import (
     TagViewSet, RecipeViewSet, IngredientViewSet,
-    UserViewSet, user_del_token
+    UserViewSet
 )
 
 
@@ -17,7 +17,6 @@ router.register('users', UserViewSet, basename='user')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('auth/token/logout/', user_del_token, name='token_del'),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.authtoken')),
 ]

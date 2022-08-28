@@ -1,33 +1,28 @@
-from datetime import datetime, timedelta
-
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-import jwt
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import AccessToken
 from django_filters.rest_framework import DjangoFilterBackend
-from django.conf import settings
 
 from .mixins import ListRetrieveViewSet
 from .models import (
     User, Subscriber, Tag, Ingredient,
     Recipe, Amount, ShoppingCart, Favorite
 )
-from .filters import RecipeFilter
+from .filters import RecipeFilter, IngredientFilter
 from .serializers import (
     TagSerializer, RecipeSerializer,
     RecipeSerializerGet, FavoriteRecipeSerializer,
     IngredientSerializerGet, UserSerializer,
-    LiteRecipeSerializer, SubscriptionUserSerializer,
+    LiteRecipeSerializer,
     PasswordSerializer, NewUserSerializer,
     FavoriteSerializer, ShoppingCartSerializer,
-    SubscriberSerializer
+    FollowListSerializer, FollowSerializer
 )
-from .pagination import UserPagination
+from .pagination import FoodgramPagePagination
 from .utils import get_ingredients_list_for_shopping
 
 
@@ -37,8 +32,9 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     ViewSet предназначен для взаимодействия в моделью Tag.
     Он позволяет получать данные о тэгах.
     """
-    queryset = Tag.objects.all()
+    queryset = Tag.objects.all().order_by('id')
     serializer_class = TagSerializer
+    pagination_class = None
 
 
 @permission_classes([permissions.IsAuthenticatedOrReadOnly, ])
@@ -51,10 +47,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     Доступна фильтрация по избранному, автору, списку покупок и тегам.
     """
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
-    pagination_class = UserPagination
+    pagination_class = FoodgramPagePagination
     filter_backends = (DjangoFilterBackend,)
-    filterset_class = RecipeFilter
+    filter_class = RecipeFilter
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -114,15 +109,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='download_shopping_cart',
         permission_classes=[IsAuthenticated]
     )
-    def download_shopping_cart(self, request):
+    def download_shopping_cart(self, request, pk=None):
         ingredients = Amount.objects.filter(
-            recipes__shopping__user=request.user).values(
+            recipes__shopping__user=request.user
+        ).values(
             'ingredients__name',
             'ingredients__measurement_unit'
-        ).annotate(Sum('amount'))
-        main_list = get_ingredients_list_for_shopping(ingredients)
-        response = HttpResponse(main_list, 'Content-Type: text/plain')
-        response['Content-Disposition'] = 'attachment; filename="Cart.txt"'
+        ).annotate(amount=Sum('amount'))
+        shopping_cart = ['Список покупок:\n--------------']
+        for position, ingredient in enumerate(ingredients, start=1):
+            shopping_cart.append(
+                f'\n{position}. {ingredient["ingredients__name"]}:'
+                f' {ingredient["amount"]}'
+                f'({ingredient["ingredients__measurement_unit"]})'
+            )
+        response = HttpResponse(shopping_cart, content_type='text')
         return response
 
 
@@ -134,8 +135,9 @@ class IngredientViewSet(ListRetrieveViewSet):
     или о каком-то определнном.
     """
     serializer_class = IngredientSerializerGet
-    queryset = Ingredient.objects.all()
-    pagination_class = UserPagination
+    queryset = Ingredient.objects.all().order_by('name')
+    filter_backends = (IngredientFilter,)
+    search_fields = ('^name',)
 
 
 @permission_classes([permissions.AllowAny, ])
@@ -148,7 +150,7 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     serializer_class = UserSerializer
     queryset = User.objects.all()
-    pagination_class = UserPagination
+    pagination_class = FoodgramPagePagination
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -206,82 +208,42 @@ class UserViewSet(viewsets.ModelViewSet):
         detail=False,
         methods=['GET'],
         url_path='subscriptions',
-        permission_classes=[IsAuthenticated]
+        permission_classes=(IsAuthenticated,)
     )
-    def subscriptions(self, request):
-        subscriptions = User.objects.filter(subscribed__user=request.user)
-        serializer = SubscriptionUserSerializer(
-            subscriptions,
-            context=self.get_serializer_context(),
-            many=True
+    def subscriptions(self, request, pk=None):
+        subscriptions_list = self.paginate_queryset(
+            User.objects.filter(subscribed__user=request.user)
         )
-        return Response(serializer.data)
+        serializer = FollowListSerializer(
+            subscriptions_list, many=True, context={
+                'request': request
+            }
+        )
+        return self.get_paginated_response(serializer.data)
+
 
     @action(
         detail=True,
         methods=['POST', 'DELETE'],
-        url_path='subscriptions',
-        permission_classes=[IsAuthenticated]
+        permission_classes=(IsAuthenticated,),
+        url_path='subscribe'
     )
-    def subscriptions_create_delete(self, request, pk):
-        subscribed = get_object_or_404(User, pk=pk)
-        current_user = self.request.user
-        subscribed_in = Subscriber.objects.filter(
-            user=current_user, subscribed=subscribed
-        )
-        data = {'user': current_user.id, 'subscribed': subscribed.id}
-        serializer = SubscriberSerializer(
-            data=data,
+    def subscribe(self, request, pk):
+        if request.method != 'POST':
+            subscription = get_object_or_404(
+                Subscriber,
+                subscribed=get_object_or_404(User, id=pk),
+                user=request.user
+            )
+            self.perform_destroy(subscription)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        serializer = FollowSerializer(
+            data={
+                'user': request.user.id,
+                'subscribed': get_object_or_404(User, id=pk).id
+            },
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
-        if request.method == 'DELETE':
-            subscribed_in.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        Subscriber.objects.create(user=current_user, subscribed=subscribed)
-        serializer = SubscriptionUserSerializer(
-            subscribed, context={'request': request}
-        )
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-@api_view(['POST', ])
-@permission_classes([permissions.AllowAny, ])
-def user_get_token(request):
-    """
-    View предназначен для получения пользователем токена. При
-    правильном имени пользователя и пароле система вернет токен, который
-    необходимо указать для авторизации по методу Bearer.
-    """
-    absent_fields = []
-    if request.data.get('password') is None:
-        absent_fields.append('password')
-    if request.data.get('email') is None:
-        absent_fields.append('email')
-    if len(absent_fields) != 0:
-        return Response(
-            {'Absent_fields': absent_fields},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    user = get_object_or_404(User, email=request.data['email'])
-    if user.check_password(request.data['password']):
-        token = AccessToken.for_user(user=user)
-        return Response({
-            'token': str(token),
-        }, status=status.HTTP_200_OK)
-    return Response(status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['DELETE', ])
-def user_del_token(request):
-    """
-    View предназначен для удаления пользователем токена.
-    """
-    dt = datetime.now() + timedelta(days=20)
-    token = jwt.encode({
-        'id': request.user.id,
-        'exp': dt.utcfromtimestamp(dt.timestamp())},
-        settings.SECRET_KEY, algorithm='HS256')
-    return Response({
-        'auth_token': str(token),
-    }, status=status.HTTP_204_NO_CONTENT)
