@@ -60,7 +60,6 @@ class UserSerializer(serializers.ModelSerializer):
         ).exists()
 
 
-
 class PasswordSerializer(serializers.ModelSerializer):
     """
     Сериализатор для изменения пароля.
@@ -133,7 +132,8 @@ class RecipeSerializerGet(serializers.ModelSerializer):
     class Meta:
         fields = (
             'id', 'tags', 'author', 'image', 'name', 'text',
-            'cooking_time', 'ingredients', 'is_favorited', 'is_in_shopping_cart'
+            'cooking_time', 'ingredients', 'is_favorited',
+            'is_in_shopping_cart'
         )
         model = Recipe
 
@@ -219,14 +219,14 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients = validated_data.get('amount')
         for ingredient in ingredients:
             Amount.objects.create(
-                    amount=ingredient['amount'],
-                    recipes=instance,
-                    ingredients=ingredient['id']
+                amount=ingredient['amount'],
+                recipes=instance,
+                ingredients=ingredient['id']
             )
         for tag in tags:
             RecipeTag.objects.create(
-                    tags=tag,
-                    recipes=instance
+                tags=tag,
+                recipes=instance
             )
         instance.save()
         return instance
@@ -368,12 +368,14 @@ class FollowListSerializer(serializers.ModelSerializer):
             subscribed=following
         ).exists()
 
+
 class RecipeFollowingSerializer(serializers.ModelSerializer):
     """ Сериализация списка рецептов на кого подписан пользователь """
 
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
+
 
 class FollowSerializer(serializers.ModelSerializer):
     """ Сериализация при подписке на пользователя """

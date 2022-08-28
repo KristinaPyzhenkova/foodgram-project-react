@@ -2,7 +2,7 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -23,7 +23,6 @@ from .serializers import (
     FollowListSerializer, FollowSerializer
 )
 from .pagination import FoodgramPagePagination
-from .utils import get_ingredients_list_for_shopping
 
 
 @permission_classes([permissions.AllowAny, ])
@@ -220,7 +219,6 @@ class UserViewSet(viewsets.ModelViewSet):
             }
         )
         return self.get_paginated_response(serializer.data)
-
 
     @action(
         detail=True,

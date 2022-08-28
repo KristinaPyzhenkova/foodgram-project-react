@@ -1,5 +1,4 @@
 from pathlib import Path
-from datetime import timedelta
 import os
 import environ
 
@@ -13,7 +12,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', default='123456789')
 
 DEBUG = os.getenv('DEBUG', default='False')
 
-ALLOWED_HOSTS = ['*', '127.0.0.1', 'localhost', '51.250.108.231',]
+ALLOWED_HOSTS = ['*', '127.0.0.1', 'localhost', '51.250.105.170']
 
 
 INSTALLED_APPS = [
@@ -93,9 +92,6 @@ TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
-
-
-
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
@@ -127,8 +123,6 @@ DJOSER = {
         ],
     }
 }
-
-
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
