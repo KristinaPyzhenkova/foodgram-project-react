@@ -1,5 +1,13 @@
-# praktikum_new_diplom
 # foodgram-project-react
+
+![workflow](https://github.com/KristinaPyzhenkova/foodgram-project-react/actions/workflows/foodgram_workflow.yml/badge.svg)
+
+Проект развернут по адресу: http://51.250.105.170
+
+Данные для авторизации в админке:
+email: testtest@mail.ru
+password: 123
+
 ## Описание проекта.
 Проект foodgram-project-react сервис, на котором пользователи смогут публиковать рецепты, подписываться на публикации других пользователей, добавлять понравившиеся рецепты в список «Избранное», а перед походом в магазин скачивать сводный список продуктов, необходимых для приготовления одного или нескольких выбранных блюд.
 
