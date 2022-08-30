@@ -97,38 +97,13 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    KG = 'kg'
-    GRAM = 'gram'
-    MILLIGRAM = 'milligram'
-    LITER = 'liter'
-    COUNT = 'count'
-    TASTE = 'taste'
-    TEA_SPOON = 'tea_spoon'
-    SPOON = 'spoon'
-    DROP = 'drop'
-    PIECE = 'piece'
-    measurement = [
-        (KG, 'кг'),
-        (GRAM, 'г'),
-        (MILLIGRAM, 'мл'),
-        (LITER, 'л'),
-        (COUNT, 'шт'),
-        (TASTE, 'по вкусу'),
-        (TEA_SPOON, 'ч. л.'),
-        (SPOON, 'ст. л.'),
-        (DROP, 'капля'),
-        (PIECE, 'кусок'),
-    ]
     name = models.CharField(
-        max_length=256,
-        verbose_name='Название ингредиента',
-        db_index=True
+        max_length=200,
+        verbose_name='Название'
     )
     measurement_unit = models.CharField(
-        max_length=10,
-        choices=measurement,
-        default=GRAM,
-        verbose_name='Ед. измерения',
+        max_length=200,
+        verbose_name='Единица измерения'
     )
 
     class Meta:
