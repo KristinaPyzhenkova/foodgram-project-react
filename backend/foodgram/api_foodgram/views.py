@@ -1,4 +1,3 @@
-from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
@@ -127,7 +126,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         shop_list = 'Список покупок \n\n'
         for i in range(len(ingredients)):
             if ingredients[i].get('ingredients__name') not in list_unique_ingr:
-                list_unique_ingr.append(ingredients[i].get('ingredients__name'))
+                list_unique_ingr.append(
+                    ingredients[i].get('ingredients__name')
+                )
         for unique_ingr in list_unique_ingr:
             count = 0
             ingredient = ingredients.filter(ingredients__name=unique_ingr)
@@ -261,5 +262,3 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
