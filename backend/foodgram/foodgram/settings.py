@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', default='123456789')
 
-DEBUG = os.getenv('DEBUG', default='False')
+DEBUG = False
 
 ALLOWED_HOSTS = ['*', '127.0.0.1', 'localhost', '51.250.105.170']
 
@@ -26,7 +26,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'djoser',
     'django_filters',
-    'api_foodgram',
+    'api_foodgram'
 ]
 
 MIDDLEWARE = [

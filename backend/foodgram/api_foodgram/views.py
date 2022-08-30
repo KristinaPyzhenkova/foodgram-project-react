@@ -14,7 +14,7 @@ from .models import (
 )
 from .filters import RecipeFilter, IngredientFilter
 from .serializers import (
-    TagSerializer, RecipeSerializer,
+    TagSerializer, RecipeWriteSerializer,
     RecipeSerializerGet, FavoriteRecipeSerializer,
     IngredientSerializerGet, UserSerializer,
     LiteRecipeSerializer,
@@ -53,7 +53,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return RecipeSerializerGet
-        return RecipeSerializer
+        return RecipeWriteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({'request': self.request})
+        return context
 
     @action(detail=True, methods=['POST', 'DELETE'], url_path='favorite')
     def favorite(self, request, pk):
@@ -108,21 +116,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='download_shopping_cart',
         permission_classes=[IsAuthenticated]
     )
-    def download_shopping_cart(self, request, pk=None):
+    def download_shopping_cart(self, request):
         ingredients = Amount.objects.filter(
-            recipes__shopping__user=request.user
-        ).values(
+            recipes__shopping__user=request.user).values(
             'ingredients__name',
-            'ingredients__measurement_unit'
-        ).annotate(amount=Sum('amount'))
-        shopping_cart = ['Список покупок:\n--------------']
-        for position, ingredient in enumerate(ingredients, start=1):
-            shopping_cart.append(
-                f'\n{position}. {ingredient["ingredients__name"]}:'
-                f' {ingredient["amount"]}'
-                f'({ingredient["ingredients__measurement_unit"]})'
-            )
-        response = HttpResponse(shopping_cart, content_type='text')
+            'ingredients__measurement_unit',
+            'amount'
+        )
+        list_unique_ingr = []
+        shop_list = 'Список покупок \n\n'
+        for i in range(len(ingredients)):
+            if ingredients[i].get('ingredients__name') not in list_unique_ingr:
+                list_unique_ingr.append(ingredients[i].get('ingredients__name'))
+        for unique_ingr in list_unique_ingr:
+            count = 0
+            ingredient = ingredients.filter(ingredients__name=unique_ingr)
+            for i in range(len(ingredient)):
+                count += ingredient[i].get('amount')
+            shop_list += (
+                f"{ingredient[i].get('ingredients__name')} "
+                f"({ingredient[i].get('ingredients__measurement_unit')}) - "
+                f"{count}\n")
+        response = HttpResponse(shop_list, 'Content-Type: text/plain')
+        response['Content-Disposition'] = 'attachment; filename="Cart.txt"'
         return response
 
 
@@ -245,3 +261,5 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
